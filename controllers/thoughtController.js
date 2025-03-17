@@ -24,41 +24,50 @@ module.exports = {
     Thought.create({
         thoughtText: req.body.thoughtText,
         username: req.body.username
-    }).then((thought) => {
+    })
+      .then((thought) => {
         return User.findOneAndUpdate( 
-            { username: req.body.username }, {
+            { username: req.body.username }, 
+            {
                 $addToSet: { thoughts: thought._id }
-            }, { new: true}
-        );
-    }).then((user) =>
-        !user
-            ? res.status(404).json({
-            message: 'Error creating thought - no user with that ID' })
-            : res.json(user)
-    ).catch((err) => {
+            }, 
+            { new: true}
+        )
+        .then((user) => {
+          if (!user) {
+            return res.status(404).json({
+              message: 'Error creating thought - no user with that ID'
+            });
+          }
+          return res.json({ thought, message: 'Thought created and added to user!' });
+        });
+      })
+      .catch((err) => {
         console.log(err);
         res.status(500).json(err);
-  })
-},
+      });
+  },
 
   updateThought(req, res) {
-      Thought.findOneAndUpdate(
-          { _id: req.params.thoughtId }, 
-          {
-            thoughtText: req.body.thoughtText,
-            username: req.body.username
-          }, 
-          { new: true }, 
-          (err, result) => {
-            if (result) {
-              res.status(200).json(result);
-              console.log(`Updated: ${result}`);
-            } else {
-              console.log(err);
-              res.status(500).json({ message: 'error', err });
-            }
-          }
-      )
+    Thought.findOneAndUpdate(
+      { _id: req.params.thoughtId }, 
+      {
+        thoughtText: req.body.thoughtText,
+        username: req.body.username
+      }, 
+      { new: true }
+    )
+      .then((result) => {
+        if (!result) {
+          return res.status(404).json({ message: 'No thought with that ID' });
+        }
+        res.status(200).json(result);
+        console.log(`Updated: ${result}`);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json({ message: 'error', err });
+      });
   },
 
   deleteThought(req, res) {
@@ -91,7 +100,7 @@ module.exports = {
       .then((thought) =>
         !thought
           ? res.status(404).json({ message: 'No thought with this id!' })
-          : res.json(`Reaction added`)
+          : res.json(thought)
       )
       .catch((err) => res.status(500).json(err));
   },
@@ -105,10 +114,8 @@ module.exports = {
       .then((thought) =>
         !thought
           ? res.status(404).json({ message: 'No thought with this id!' })
-          : res.json(`Reaction deleted`)
+          : res.json(thought)
       )
       .catch((err) => res.status(500).json(err));
   },
-
-
 };
